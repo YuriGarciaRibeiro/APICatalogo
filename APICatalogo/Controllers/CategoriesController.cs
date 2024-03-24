@@ -13,18 +13,18 @@ namespace APICatalogo.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CategoriasController : ControllerBase
+public class CategoriesController : ControllerBase
 {
     private readonly AppDbContext _context;
 
-    public CategoriasController(AppDbContext context)
+    public CategoriesController(AppDbContext context)
     {
         _context = context;
     }
 
     // GET: api/Categorias
     [HttpGet]
-    public async Task<ActionResult<PaginatedResponse<Category>>> GetCategorias(int pageNumber = 1, int pageSize = 10)
+    public async Task<ActionResult<PaginatedResponse<Category>>> GetCategories(int pageNumber = 1, int pageSize = 10)
     {
         try
         {
@@ -65,7 +65,7 @@ public class CategoriasController : ControllerBase
 
     // GET: api/Categorias/5
     [HttpGet("{id:int:min(1)}")]
-    public async Task<ActionResult<Category>> GetCategoria(int id)
+    public async Task<ActionResult<Category>> GetCategory(int id)
     {
         try
         {
@@ -90,7 +90,7 @@ public class CategoriasController : ControllerBase
     // PUT: api/Categorias/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> PutCategoria(int id, Category category)
+    public async Task<IActionResult> PutCategory(int id, Category category)
     {
         try
         {
@@ -131,7 +131,7 @@ public class CategoriasController : ControllerBase
     // POST: api/Categorias
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Category>> PostCategoria(Category category)
+    public async Task<ActionResult<Category>> PostCategory(Category category)
     {
         try
         {
@@ -149,7 +149,7 @@ public class CategoriasController : ControllerBase
 
     // DELETE: api/Categorias/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteCategoria(int id)
+    public async Task<IActionResult> DeleteCategory(int id)
     {
         try
         {

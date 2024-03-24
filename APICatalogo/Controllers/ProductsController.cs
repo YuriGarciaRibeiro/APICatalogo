@@ -24,7 +24,7 @@ namespace APICatalogo.Controllers;
 
         // GET: api/Produtos
         [HttpGet]
-        public async Task<ActionResult<PaginatedResponse<Product>>> GetProdutos(int pageNumber = 1, int pageSize = 10)
+        public async Task<ActionResult<PaginatedResponse<Product>>> GetProducts(int pageNumber = 1, int pageSize = 10)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace APICatalogo.Controllers;
 
         // GET: api/Produtoes/5
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Product>> GetProduto(int id)
+        public async Task<ActionResult<Product>> GetProduct(int id)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace APICatalogo.Controllers;
         // PUT: api/Produtoes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduto(int id, Product product)
+        public async Task<IActionResult> PutProduct(int id, Product product)
         {
             try
             {
@@ -103,6 +103,7 @@ namespace APICatalogo.Controllers;
 
                 try
                 {
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -131,7 +132,7 @@ namespace APICatalogo.Controllers;
         // POST: api/Produtoes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduto(Product product)
+        public async Task<ActionResult<Product>> PostProduct(Product product)
         {
             try
             {
@@ -151,7 +152,7 @@ namespace APICatalogo.Controllers;
 
         // DELETE: api/Produtoes/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduto(int id)
+        public async Task<IActionResult> DeleteProduct(int id)
         {   
             try
             {

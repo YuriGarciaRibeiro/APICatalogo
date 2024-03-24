@@ -40,7 +40,6 @@ public class Product
     [Required(ErrorMessage = "A categoria é obrigatória")]
     public int CategoryId { get; set; }
 
-    [Required]
     [JsonIgnore]
-    public required Category Category { get; set; }
+    public Category? Category { get; set; }
 }

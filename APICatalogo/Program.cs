@@ -15,12 +15,10 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-string mySqlConnectionStr = builder.Configuration.GetConnectionString("DefaultConnection");
+string mySqlConnectionStr = builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(mySqlConnectionStr,ServerVersion.AutoDetect(mySqlConnectionStr)));
-
-
 
 
 

@@ -7,36 +7,37 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using APICatalogo.Context;
 using APICatalogo.Models;
+using APICatalogo.Responses;
 
-namespace APICatalogo.Controllers
-{
+namespace APICatalogo.Controllers;
+
     [Route("api/[controller]")]
     [ApiController]
-    public class ProdutoesController : ControllerBase
+    public class ProductsController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public ProdutoesController(AppDbContext context)
+        public ProductsController(AppDbContext context)
         {
             _context = context;
         }
 
         // GET: api/Produtos
         [HttpGet]
-        public async Task<ActionResult<PaginatedResponse<Produto>>> GetProdutos(int pageNumber = 1, int pageSize = 10)
+        public async Task<ActionResult<PaginatedResponse<Product>>> GetProdutos(int pageNumber = 1, int pageSize = 10)
         {
             try
             {
-                var totalRecords = await _context.Produtos.CountAsync();
+                var totalRecords = await _context.Products.CountAsync();
                 var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
                 // Validar e ajustar os parâmetros da página
                 pageNumber = Math.Max(1, pageNumber);
                 pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
 
-                var produtos = await _context.Produtos
+                var Products = await _context.Products
                                              .AsNoTracking()     
-                                             .Include(p => p.Categoria)                  
+                                             .Include(p => p.Category)                  
                                              .Skip((pageNumber - 1) * pageSize)
                                              .Take(pageSize)
                                              .ToListAsync();
@@ -48,53 +49,57 @@ namespace APICatalogo.Controllers
                     nextPageUrl = Url.Action("GetProdutos", new { pageNumber = pageNumber + 1, pageSize = pageSize });
                 }
 
-                var response = new PaginatedResponse<Produto>(produtos, pageNumber, pageSize, totalRecords, nextPageUrl);
+                var response = new PaginatedResponse<Product>(Products, pageNumber, pageSize, totalRecords, nextPageUrl);
 
                     return Ok(response);
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                                          "Erro ao tentar obter os produtos do banco de dados");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar obter os produtos do banco de dados" 
+            });
             }
         }
 
 
         // GET: api/Produtoes/5
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Produto>> GetProduto(int id)
+        public async Task<ActionResult<Product>> GetProduto(int id)
         {
             try
             {
-                var produto = await _context.Produtos.AsNoTracking().FirstOrDefaultAsync(a => a.ProdutoId == id);
+                var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(a => a.ProductId == id);
 
-                if (produto == null)
+                if (product == null)
                 {
                     return NotFound();
                 }
 
-                    return produto;
+                    return product;
                 }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                       "Erro ao tentar obter os produtos do banco de dados");   
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar obter o produto do banco de dados" 
+            }); 
             }
         }
 
         // PUT: api/Produtoes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduto(int id, Produto produto)
+        public async Task<IActionResult> PutProduto(int id, Product product)
         {
             try
             {
-                if (id != produto.ProdutoId)
+                if (id != product.ProductId)
                 {
                     return BadRequest();
                 }
 
-                _context.Entry(produto).State = EntityState.Modified;
+                _context.Entry(product).State = EntityState.Modified;
 
                 try
                 {
@@ -116,27 +121,31 @@ namespace APICatalogo.Controllers
             }
             catch
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                                          "Erro ao tentar atualizar o produto");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar Atualizar o produto do banco de dados" 
+            });
             }
         }
 
         // POST: api/Produtoes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Produto>> PostProduto(Produto produto)
+        public async Task<ActionResult<Product>> PostProduto(Product product)
         {
             try
             {
-                _context.Produtos.Add(produto);
+                _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetProduto", new { id = produto.ProdutoId }, produto);
+                return CreatedAtAction("GetProduto", new { id = product.ProductId }, product);
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                             "Erro ao tentar criar um novo produto");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao Criar Novo Produto No Banco de Dados" 
+            });
             }
         }
 
@@ -146,46 +155,28 @@ namespace APICatalogo.Controllers
         {   
             try
             {
-                var produto = await _context.Produtos.FindAsync(id);
+                var produto = await _context.Products.FindAsync(id);
                 if (produto == null)
                 {
                     return NotFound();
                 }
 
-                _context.Produtos.Remove(produto);
+                _context.Products.Remove(produto);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                             "Erro ao tentar excluir o produto");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao Deletar Produto Do Banco de Dados" 
+            });
             }
         }
 
         private bool ProdutoExists(int id)
         {
-            return _context.Produtos.Any(e => e.ProdutoId == id);
+            return _context.Products.Any(e => e.ProductId == id);
         }
     }
-}
-
-public class PaginatedResponse<T>
-{
-    public IEnumerable<T> Data { get; set; }
-    public int PageNumber { get; set; }
-    public int PageSize { get; set; }
-    public int TotalRecords { get; set; }
-    public string? NextPageUrl { get; set; }
-
-    public PaginatedResponse(IEnumerable<T> data, int pageNumber, int pageSize, int totalRecords, string? nextPageUrl)
-    {
-        Data = data;
-        PageNumber = pageNumber;
-        PageSize = pageSize;
-        TotalRecords = totalRecords;
-        NextPageUrl = nextPageUrl;
-    }
-}
-

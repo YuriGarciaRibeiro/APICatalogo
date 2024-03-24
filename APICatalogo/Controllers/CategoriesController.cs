@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using APICatalogo.Context;
 using APICatalogo.Models;
+using APICatalogo.Responses;
 
 namespace APICatalogo.Controllers;
 
@@ -14,7 +15,7 @@ namespace APICatalogo.Controllers;
 [ApiController]
 public class CategoriasController : ControllerBase
 {
-    private readonly AppDbContext? _context;
+    private readonly AppDbContext _context;
 
     public CategoriasController(AppDbContext context)
     {
@@ -23,20 +24,20 @@ public class CategoriasController : ControllerBase
 
     // GET: api/Categorias
     [HttpGet]
-    public async Task<ActionResult<PaginatedResponse<Categoria>>> GetCategorias(int pageNumber = 1, int pageSize = 10)
+    public async Task<ActionResult<PaginatedResponse<Category>>> GetCategorias(int pageNumber = 1, int pageSize = 10)
     {
         try
         {
-            var totalRecords = await _context.Categorias.CountAsync();
+            var totalRecords = await _context.Categories.CountAsync();
             var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
             // Validar e ajustar os parâmetros da página
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
 
-            var categorias = await _context.Categorias
+            var categorias = await _context.Categories
                                            .AsNoTracking()
-                                           .Include(c => c.Produtos)
+                                           .Include(c => c.Products)
                                            .Skip((pageNumber - 1) * pageSize)
                                            .Take(pageSize)
                                            .ToListAsync();
@@ -48,25 +49,27 @@ public class CategoriasController : ControllerBase
                 nextPageUrl = Url.Action("GetCategorias", new { pageNumber = pageNumber + 1, pageSize = pageSize });
             }
 
-            var response = new PaginatedResponse<Categoria>(categorias, pageNumber, pageSize, totalRecords, nextPageUrl);
+            var response = new PaginatedResponse<Category>(categorias, pageNumber, pageSize, totalRecords, nextPageUrl);
 
             return Ok(response);
         }
         catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                                                                  "Erro ao tentar obter as categorias do banco de dados");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar obter as categorias do banco de dados" 
+            });
         }
     }
 
 
     // GET: api/Categorias/5
     [HttpGet("{id:int:min(1)}")]
-    public async Task<ActionResult<Categoria>> GetCategoria(int id)
+    public async Task<ActionResult<Category>> GetCategoria(int id)
     {
         try
         {
-            var categoria = await _context.Categorias.AsNoTracking().FirstOrDefaultAsync(a => a.CategoriaId == id);
+            var categoria = await _context.Categories.AsNoTracking().FirstOrDefaultAsync(a => a.CategoryId == id);
 
             if (categoria == null)
             {
@@ -77,24 +80,26 @@ public class CategoriasController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                                                   "Erro ao tentar obter a categoria do banco de dados");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar obter a categoria do banco de dados" 
+            });
         }
     }
 
     // PUT: api/Categorias/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> PutCategoria(int id, Categoria categoria)
+    public async Task<IActionResult> PutCategoria(int id, Category category)
     {
         try
         {
-            if (id != categoria.CategoriaId)
+            if (id != category.CategoryId)
             {
                 return BadRequest();
             }
 
-            _context.Entry(categoria).State = EntityState.Modified;
+            _context.Entry(category).State = EntityState.Modified;
 
             try
             {
@@ -116,22 +121,24 @@ public class CategoriasController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                                    "Erro ao tentar atualizar a categoria");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar alterar a categoria do banco de dados" 
+            });
         }
     }
 
     // POST: api/Categorias
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Categoria>> PostCategoria(Categoria categoria)
+    public async Task<ActionResult<Category>> PostCategoria(Category category)
     {
         try
         {
-            _context.Categorias.Add(categoria);
+            _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetCategoria", new { id = categoria.CategoriaId }, categoria);
+            return CreatedAtAction("GetCategoria", new { id = category.CategoryId }, category);
         }
         catch (Exception)
         {
@@ -146,44 +153,29 @@ public class CategoriasController : ControllerBase
     {
         try
         {
-            var categoria = await _context.Categorias.FindAsync(id);
+            var categoria = await _context.Categories.FindAsync(id);
             if (categoria == null)
             {
                 return NotFound();
             }
 
-            _context.Categorias.Remove(categoria);
+            _context.Categories.Remove(categoria);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
         catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                     "Erro ao tentar deletar a categoria");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
+                StatusCode = StatusCodes.Status500InternalServerError, 
+                Message = "Erro ao tentar deletar a categoria do banco de dados" 
+            });
         }
     }
 
     private bool CategoriaExists(int id)
     {
-        return _context.Categorias.Any(e => e.CategoriaId == id);
+        return _context.Categories.Any(e => e.CategoryId == id);
     }
 }
 
-public class PaginatedResponse<T>
-{
-    public IEnumerable<T> Data { get; set; }
-    public int PageNumber { get; set; }
-    public int PageSize { get; set; }
-    public int TotalRecords { get; set; }
-    public string? NextPageUrl { get; set; }
-
-    public PaginatedResponse(IEnumerable<T> data, int pageNumber, int pageSize, int totalRecords, string nextPageUrl)
-    {
-        Data = data;
-        PageNumber = pageNumber;
-        PageSize = pageSize;
-        TotalRecords = totalRecords;
-        NextPageUrl = nextPageUrl;
-    }
-}

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using APICatalogo.Context;
 using APICatalogo.Models;
 
-namespace APICatalogo.Repositories.CategoryRepository
+namespace APICatalogo.Repositories.CategoryRepositoryGroup
 {
     public class CategoryRepository : Repository<Category>, ICategoryRepository
     {

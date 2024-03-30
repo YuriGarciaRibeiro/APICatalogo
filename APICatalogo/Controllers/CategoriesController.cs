@@ -9,6 +9,7 @@ using APICatalogo.Context;
 using APICatalogo.Models;
 using APICatalogo.Responses;
 using APICatalogo.Repositories;
+using APICatalogo.Repositories.UnitOfWork;
 
 namespace APICatalogo.Controllers;
 
@@ -17,20 +18,20 @@ namespace APICatalogo.Controllers;
 public class CategoriesController : ControllerBase
 {
     
-    private readonly IRepository<Category> _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CategoriesController(IRepository<Category> repository)
+    public CategoriesController(IUnitOfWork unitOfWork)
     {
-
-        _repository = repository;
+        _unitOfWork = unitOfWork;
     }
+    
 
     // GET: api/Categorias
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<Category>>> GetCategories(int pageNumber = 1, int pageSize = 10)
     {
         
-            var totalRecords = await _repository.CountAsync();
+            var totalRecords = await _unitOfWork.CategoryRepository.CountAsync();
             var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
             // Validar e ajustar os parâmetros da página
@@ -38,7 +39,7 @@ public class CategoriesController : ControllerBase
 
             pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
 
-            var categorias = await _repository.GetAllAsync(pageNumber, pageSize);
+            var categorias = await _unitOfWork.CategoryRepository.GetAllAsync(pageNumber, pageSize);
 
             // Construir o URL para a próxima página (caso exista)
             string? nextPageUrl = null;
@@ -56,7 +57,7 @@ public class CategoriesController : ControllerBase
     [HttpGet("{id:int:min(1)}")]
     public async Task<ActionResult<Category>> GetCategory(int id)
     {
-        var categoria = await _repository.GetAsync(c => c.CategoryId == id);
+        var categoria = await _unitOfWork.CategoryRepository.GetAsync(c => c.CategoryId == id);
 
         if (categoria == null)
         {
@@ -76,12 +77,13 @@ public class CategoriesController : ControllerBase
                 return BadRequest();
             }
 
-            if (!await _repository.ExistsAsync(c => c.CategoryId == id))
+            if (!await _unitOfWork.CategoryRepository.ExistsAsync(c => c.CategoryId == id))
             {
                 return NotFound();
             }
 
-            await _repository.UpdateAsync(category);
+            _unitOfWork.CategoryRepository.Update(category);
+            await _unitOfWork.CommitAsync();
 
             return NoContent();
     }
@@ -92,8 +94,10 @@ public class CategoriesController : ControllerBase
     public async Task<ActionResult<Category>> PostCategory(Category category)
     {
 
-        await _repository.CreateAsync(category);
-        return CreatedAtAction("GetCategoria", new { id = category.CategoryId }, category);
+        _unitOfWork.CategoryRepository.CreateAsync(category);
+        await _unitOfWork.CommitAsync();
+
+        return CreatedAtAction("PostCategory", new { id = category.CategoryId }, category);
 
     }
 
@@ -101,12 +105,13 @@ public class CategoriesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        if (!await _repository.ExistsAsync(c => c.CategoryId == id))
+        if (!await _unitOfWork.CategoryRepository.ExistsAsync(c => c.CategoryId == id))
         {
             return NotFound();
         }
 
-        await _repository.DeleteAsync(c => c.CategoryId == id);
+        await _unitOfWork.CategoryRepository.DeleteAsync(c => c.CategoryId == id);
+        await _unitOfWork.CommitAsync();
 
         return NoContent();
 

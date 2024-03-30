@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using APICatalogo.Models;
 
-namespace APICatalogo.Repositories.CategoryRepository
+namespace APICatalogo.Repositories.ProductRepositoryGroup
 {
-    public interface ICategoryRepository : IRepository<Category>
+    public interface IProductRepository: IRepository<Product>
     {
         
     }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using APICatalogo.Context;
 using APICatalogo.Models;
 
-namespace APICatalogo.Repositories.ProductRepository
+namespace APICatalogo.Repositories.ProductRepositoryGroup
 {
     public class ProductRepository : Repository<Product>, IProductRepository
     {

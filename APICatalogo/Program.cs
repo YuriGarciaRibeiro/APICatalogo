@@ -2,8 +2,9 @@ using APICatalogo.Context;
 using APICatalogo.Logging;
 using APICatalogo.Middlewares;
 using APICatalogo.Repositories;
-using APICatalogo.Repositories.CategoryRepository;
-using APICatalogo.Repositories.ProductRepository;
+using APICatalogo.Repositories.CategoryRepositoryGroup;
+using APICatalogo.Repositories.ProductRepositoryGroup;
+using APICatalogo.Repositories.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
 builder.Logging.AddProvider(

@@ -1,15 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using APICatalogo.Context;
+﻿using Microsoft.AspNetCore.Mvc;
 using APICatalogo.Models;
 using APICatalogo.Responses;
-using APICatalogo.Repositories.ProductRepository;
-using APICatalogo.Repositories;
+using APICatalogo.Repositories.UnitOfWork;
 
 namespace APICatalogo.Controllers;
 
@@ -17,26 +9,27 @@ namespace APICatalogo.Controllers;
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly IRepository<Product> _repository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public ProductsController(IRepository<Product> repository)
+        public ProductsController(IUnitOfWork unitOfWork)
         {
-            _repository = repository;
+            _unitOfWork = unitOfWork;
         }
+
 
         // GET: api/Produtos
         [HttpGet]
         public async Task<ActionResult<PaginatedResponse<Product>>> GetProducts(int pageNumber = 1, int pageSize = 10)
         {
             
-                var totalRecords = await _repository.CountAsync();
+                var totalRecords = await _unitOfWork.ProductRepository.CountAsync();
                 var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
                 // Validar e ajustar os parâmetros da página
                 pageNumber = Math.Max(1, pageNumber);
                 pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
 
-                var Products = await _repository.GetAllAsync(pageNumber, pageSize);
+                var Products = await _unitOfWork.ProductRepository.GetAllAsync(pageNumber, pageSize);
 
                 // Construir o URL para a próxima página
                 string? nextPageUrl = null;
@@ -55,7 +48,7 @@ namespace APICatalogo.Controllers;
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
         
-            var product = await _repository.GetAsync(c => c.ProductId == id);
+            var product = await _unitOfWork.ProductRepository.GetAsync(c => c.ProductId == id);
 
             if (product == null)
             {
@@ -67,7 +60,7 @@ namespace APICatalogo.Controllers;
 
         // PUT: api/Produtoes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
+        [HttpPut("{id:int:min(1)}")]
         public async Task<IActionResult> PutProduct(int id, [FromBody] Product product)
         {
 
@@ -76,12 +69,14 @@ namespace APICatalogo.Controllers;
                 return BadRequest();
             }
 
-            if (!await _repository.ExistsAsync(c => c.ProductId == id))
+            if (!await _unitOfWork.ProductRepository.ExistsAsync(c => c.ProductId == id))
             {
                 return NotFound();
             }
 
-            await _repository.UpdateAsync(product);
+
+            _unitOfWork.ProductRepository.Update(product);
+            await _unitOfWork.CommitAsync();
             
             return NoContent();
         }
@@ -92,8 +87,9 @@ namespace APICatalogo.Controllers;
         public async Task<ActionResult<Product>> PostProduct(Product product)
         {
 
-            await _repository.CreateAsync(product);
-            Console.WriteLine("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+            _unitOfWork.ProductRepository.CreateAsync(product);
+            await _unitOfWork.CommitAsync();
+            
 
             return CreatedAtAction("PostProduct", new { id = product.ProductId }, product);
 
@@ -103,13 +99,13 @@ namespace APICatalogo.Controllers;
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {   
-            if (!await _repository.ExistsAsync(c => c.ProductId == id))
+            if (!await _unitOfWork.ProductRepository.ExistsAsync(c => c.ProductId == id))
             {
                 return NotFound();
             }
-
-
-            await _repository.DeleteAsync(c => c.ProductId == id);
+           
+            await _unitOfWork.ProductRepository.DeleteAsync(c => c.ProductId == id);
+            await _unitOfWork.CommitAsync();
 
             return NoContent();
 

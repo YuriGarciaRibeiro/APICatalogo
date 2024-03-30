@@ -19,17 +19,11 @@ namespace APICatalogo.Repositories
             _context = contexto;
         }
 
-        async public Task<T?> CreateAsync(T entity)
+        public T? CreateAsync(T entity)
         {   
             try
             {
-                Console.WriteLine("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
                 _context.Set<T>().Add(entity);
-                Console.WriteLine("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-                await _context.SaveChangesAsync();
-                Console.WriteLine("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
                 return entity;
             }
             catch (Exception ex)
@@ -49,7 +43,6 @@ namespace APICatalogo.Repositories
                     return null;
                 }
                 _context.Set<T>().Remove(entity);
-                await _context.SaveChangesAsync();
                 return entity;
             }
             catch (Exception ex)
@@ -62,10 +55,11 @@ namespace APICatalogo.Repositories
         async public Task<IEnumerable<T>> GetAllAsync(int page, int size)
         {
             try {
-                return await _context.Set<T>().AsNoTracking()                      
-                                             .Skip((page - 1) * size)
-                                             .Take(size)
-                                             .ToListAsync();
+                return await _context.Set<T>()  
+                            .AsNoTracking()                      
+                            .Skip((page - 1) * size)
+                            .Take(size)
+                            .ToListAsync();
                 
             }
             catch (Exception ex)
@@ -79,7 +73,7 @@ namespace APICatalogo.Repositories
         async public Task<T?> GetAsync(Expression<Func<T, bool>> predicate)
         {
             try {
-                return await _context.Set<T>().SingleOrDefaultAsync(predicate);
+                return await _context.Set<T>().AsNoTracking().SingleOrDefaultAsync(predicate);
             }
             catch (Exception ex)
             {
@@ -88,12 +82,11 @@ namespace APICatalogo.Repositories
             }
         }
 
-        async public Task<T?> UpdateAsync(T entity)
+        public T? Update(T entity)
         {
             try
             {
                 _context.Entry(entity).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
                 return entity;
             }
             catch (Exception ex)

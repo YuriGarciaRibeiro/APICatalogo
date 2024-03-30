@@ -30,19 +30,34 @@ public class CustomerLogger : ILogger
     }
 
     private void EscreverTextoNoArquivo(string mensagem)
+{
+    string caminhoDiretorio = @"c:\dados\log\";
+    string caminhoArquivoLog = Path.Combine(caminhoDiretorio, "Log.txt");
+
+    // Verifica se o diretório existe, caso contrário, cria-o
+    if (!Directory.Exists(caminhoDiretorio))
     {
-        string caminhoArquivoLog = @"d:\dados\log\Macoratti_Log.txt";
-        using (StreamWriter streamWriter = new StreamWriter(caminhoArquivoLog, true))
+        Directory.CreateDirectory(caminhoDiretorio);
+    }
+
+    // Verifica se o arquivo de log existe, caso contrário, cria-o
+    if (!File.Exists(caminhoArquivoLog))
+    {
+        File.Create(caminhoArquivoLog).Close();
+    }
+
+    // Escreve no arquivo de log
+    using (StreamWriter streamWriter = new StreamWriter(caminhoArquivoLog, true))
+    {
+        try
         {
-            try
-            {
-                streamWriter.WriteLine(mensagem);
-                streamWriter.Close();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            streamWriter.WriteLine(mensagem);
+        }
+        catch (Exception)
+        {
+            throw;
         }
     }
+}
+
 }

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using APICatalogo.Context;
 using APICatalogo.Models;
 using APICatalogo.Responses;
+using APICatalogo.Repositories;
 
 namespace APICatalogo.Controllers;
 
@@ -15,34 +16,31 @@ namespace APICatalogo.Controllers;
 [ApiController]
 public class CategoriesController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    
+    private readonly IRepository<Category> _repository;
 
-    public CategoriesController(AppDbContext context)
+    public CategoriesController(IRepository<Category> repository)
     {
-        _context = context;
+
+        _repository = repository;
     }
 
     // GET: api/Categorias
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<Category>>> GetCategories(int pageNumber = 1, int pageSize = 10)
     {
-        try
-        {
-            var totalRecords = await _context.Categories.CountAsync();
+        
+            var totalRecords = await _repository.CountAsync();
             var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
             // Validar e ajustar os parâmetros da página
             pageNumber = Math.Max(1, pageNumber);
+
             pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
 
-            var categorias = await _context.Categories
-                                           .AsNoTracking()
-                                           .Include(c => c.Products)
-                                           .Skip((pageNumber - 1) * pageSize)
-                                           .Take(pageSize)
-                                           .ToListAsync();
+            var categorias = await _repository.GetAllAsync(pageNumber, pageSize);
 
-            // Construir o URL para a próxima página
+            // Construir o URL para a próxima página (caso exista)
             string? nextPageUrl = null;
             if (pageNumber < totalPages)
             {
@@ -50,16 +48,7 @@ public class CategoriesController : ControllerBase
             }
 
             var response = new PaginatedResponse<Category>(categorias, pageNumber, pageSize, totalRecords, nextPageUrl);
-
             return Ok(response);
-        }
-        catch (Exception)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
-                StatusCode = StatusCodes.Status500InternalServerError, 
-                Message = "Erro ao tentar obter as categorias do banco de dados" 
-            });
-        }
     }
 
 
@@ -67,24 +56,14 @@ public class CategoriesController : ControllerBase
     [HttpGet("{id:int:min(1)}")]
     public async Task<ActionResult<Category>> GetCategory(int id)
     {
-        try
-        {
-            var categoria = await _context.Categories.AsNoTracking().FirstOrDefaultAsync(a => a.CategoryId == id);
+        var categoria = await _repository.GetAsync(c => c.CategoryId == id);
 
-            if (categoria == null)
-            {
-                return NotFound();
-            }
-
-            return categoria;
-        }
-        catch (Exception)
+        if (categoria == null)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
-                StatusCode = StatusCodes.Status500InternalServerError, 
-                Message = "Erro ao tentar obter a categoria do banco de dados" 
-            });
+            return NotFound();
         }
+
+        return categoria;
     }
 
     // PUT: api/Categorias/5
@@ -92,40 +71,19 @@ public class CategoriesController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> PutCategory(int id, Category category)
     {
-        try
-        {
             if (id != category.CategoryId)
             {
                 return BadRequest();
             }
 
-            _context.Entry(category).State = EntityState.Modified;
+            if (!await _repository.ExistsAsync(c => c.CategoryId == id))
+            {
+                return NotFound();
+            }
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CategoriaExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            await _repository.UpdateAsync(category);
 
             return NoContent();
-        }
-        catch (Exception)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
-                StatusCode = StatusCodes.Status500InternalServerError, 
-                Message = "Erro ao tentar alterar a categoria do banco de dados" 
-            });
-        }
     }
 
     // POST: api/Categorias
@@ -133,49 +91,26 @@ public class CategoriesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Category>> PostCategory(Category category)
     {
-        try
-        {
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetCategoria", new { id = category.CategoryId }, category);
-        }
-        catch (Exception)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                                                                                    "Erro ao tentar criar uma nova categoria");
-        }
+        await _repository.CreateAsync(category);
+        return CreatedAtAction("GetCategoria", new { id = category.CategoryId }, category);
+
     }
 
     // DELETE: api/Categorias/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        try
+        if (!await _repository.ExistsAsync(c => c.CategoryId == id))
         {
-            var categoria = await _context.Categories.FindAsync(id);
-            if (categoria == null)
-            {
-                return NotFound();
-            }
-
-            _context.Categories.Remove(categoria);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return NotFound();
         }
-        catch (Exception)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse { 
-                StatusCode = StatusCodes.Status500InternalServerError, 
-                Message = "Erro ao tentar deletar a categoria do banco de dados" 
-            });
-        }
+
+        await _repository.DeleteAsync(c => c.CategoryId == id);
+
+        return NoContent();
+
     }
 
-    private bool CategoriaExists(int id)
-    {
-        return _context.Categories.Any(e => e.CategoryId == id);
-    }
 }
 

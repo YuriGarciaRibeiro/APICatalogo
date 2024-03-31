@@ -11,7 +11,7 @@ public class Product
     public int ProductId { get; set; }
     [Required(ErrorMessage = "O nome é obrigatório")]
     [MaxLength(80)]
-    public string? Name { get; set; }
+    public required string Name { get; set; }
 
     [Required(ErrorMessage = "A descricão é obrigatório")]
     [MaxLength(300)]
@@ -39,6 +39,7 @@ public class Product
 
     [Required(ErrorMessage = "A categoria é obrigatória")]
     public int CategoryId { get; set; }
+    
 
     [JsonIgnore]
     public Category? Category { get; set; }

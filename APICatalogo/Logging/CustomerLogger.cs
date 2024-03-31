@@ -11,7 +11,7 @@ public class CustomerLogger : ILogger
         loggerConfig = config;
     }
 
-    public IDisposable BeginScope<TState>(TState state)
+    public IDisposable? BeginScope<TState>(TState state)
     {
         return null;
     }

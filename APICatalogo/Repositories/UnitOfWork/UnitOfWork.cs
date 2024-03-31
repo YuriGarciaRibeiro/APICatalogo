@@ -15,7 +15,7 @@ namespace APICatalogo.Repositories.UnitOfWork
 
         private ICategoryRepository? _categoryRepository;
 
-        public AppDbContext _context;
+        private readonly AppDbContext _context;
 
         
         public UnitOfWork(AppDbContext contexto)
@@ -46,7 +46,7 @@ namespace APICatalogo.Repositories.UnitOfWork
             return _context.SaveChangesAsync();
         }
 
-        public void Dispose()
+        public void DisposeAsync()
         {
             _context.DisposeAsync();
         }

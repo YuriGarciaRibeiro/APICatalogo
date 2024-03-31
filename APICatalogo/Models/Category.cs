@@ -20,7 +20,7 @@ public class Category
     [Required(ErrorMessage = "O nome é obrigatorio")]
     [MaxLength(80)]
     [FirstCapitalLetter]
-    public string? Name { get; set; }
+    public string Name { get; set; }
 
     [Required(ErrorMessage = "A descricão é obrigatorio")]
     [MaxLength(300)]

@@ -10,6 +10,8 @@ using APICatalogo.Models;
 using APICatalogo.Responses;
 using APICatalogo.Repositories;
 using APICatalogo.Repositories.UnitOfWork;
+using APICatalogo.DTOs;
+using AutoMapper;
 
 namespace APICatalogo.Controllers;
 
@@ -17,45 +19,55 @@ namespace APICatalogo.Controllers;
 [ApiController]
 public class CategoriesController : ControllerBase
 {
-    
-    private readonly IUnitOfWork _unitOfWork;
 
-    public CategoriesController(IUnitOfWork unitOfWork)
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+
+    public CategoriesController(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
-    
+
 
     // GET: api/Categorias
     [HttpGet]
-    public async Task<ActionResult<PaginatedResponse<Category>>> GetCategories(int pageNumber = 1, int pageSize = 10)
+    public async Task<ActionResult<PaginatedResponse<CategoryDto>>> GetCategories(int pageNumber = 1, int pageSize = 10)
     {
-        
-            var totalRecords = await _unitOfWork.CategoryRepository.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
-            // Validar e ajustar os parâmetros da página
-            pageNumber = Math.Max(1, pageNumber);
+        var totalRecords = await _unitOfWork.CategoryRepository.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
 
-            pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
+        // Validar e ajustar os parâmetros da página
+        pageNumber = Math.Max(1, pageNumber);
 
-            var categorias = await _unitOfWork.CategoryRepository.GetAllAsync(pageNumber, pageSize);
+        pageSize = Math.Max(1, Math.Min(pageSize, 100)); // Limita o tamanho máximo da página a 100
 
-            // Construir o URL para a próxima página (caso exista)
-            string? nextPageUrl = null;
-            if (pageNumber < totalPages)
-            {
-                nextPageUrl = Url.Action("GetCategorias", new { pageNumber = pageNumber + 1, pageSize = pageSize });
-            }
+        var categorias = await _unitOfWork.CategoryRepository.GetAllAsync(pageNumber, pageSize);
 
-            var response = new PaginatedResponse<Category>(categorias, pageNumber, pageSize, totalRecords, nextPageUrl);
-            return Ok(response);
+        if (!categorias.Any())
+        {
+            return NotFound();
+        }
+
+
+        var categoriasDto = _mapper.Map<List<CategoryDto>>(categorias);
+
+        // Construir o URL para a próxima página (caso exista)
+        string? nextPageUrl = null;
+        if (pageNumber < totalPages)
+        {
+            nextPageUrl = Url.Action("GetCategorias", new { pageNumber = pageNumber + 1, pageSize = pageSize });
+        }
+
+        var response = new PaginatedResponse<CategoryDto>(categoriasDto, pageNumber, pageSize, totalRecords, nextPageUrl);
+        return Ok(response);
     }
 
 
     // GET: api/Categorias/5
     [HttpGet("{id:int:min(1)}")]
-    public async Task<ActionResult<Category>> GetCategory(int id)
+    public async Task<ActionResult<CategoryDto>> GetCategory(int id)
     {
         var categoria = await _unitOfWork.CategoryRepository.GetAsync(c => c.CategoryId == id);
 
@@ -64,37 +76,42 @@ public class CategoriesController : ControllerBase
             return NotFound();
         }
 
-        return categoria;
+        var categoriaDto = _mapper.Map<CategoryDto>(categoria);
+
+        return categoriaDto;
     }
 
     // PUT: api/Categorias/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> PutCategory(int id, Category category)
+    public async Task<IActionResult> PutCategory(int id, CategoryDto category)
     {
-            if (id != category.CategoryId)
-            {
-                return BadRequest();
-            }
+        if (id != category.CategoryId)
+        {
+            return BadRequest();
+        }
 
-            if (!await _unitOfWork.CategoryRepository.ExistsAsync(c => c.CategoryId == id))
-            {
-                return NotFound();
-            }
+        if (!await _unitOfWork.CategoryRepository.ExistsAsync(c => c.CategoryId == id))
+        {
+            return NotFound();
+        }
 
-            _unitOfWork.CategoryRepository.Update(category);
-            await _unitOfWork.CommitAsync();
+        var categoryToUpdate = _mapper.Map<Category>(category);
 
-            return NoContent();
+        _unitOfWork.CategoryRepository.Update(categoryToUpdate);
+        await _unitOfWork.CommitAsync();
+
+        return NoContent();
     }
 
     // POST: api/Categorias
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Category>> PostCategory(Category category)
+    public async Task<ActionResult<CategoryDto>> PostCategory(CategoryDto category)
     {
+        var categoryToAdd = _mapper.Map<Category>(category);
 
-        _unitOfWork.CategoryRepository.CreateAsync(category);
+        _unitOfWork.CategoryRepository.CreateAsync(categoryToAdd);
         await _unitOfWork.CommitAsync();
 
         return CreatedAtAction("PostCategory", new { id = category.CategoryId }, category);

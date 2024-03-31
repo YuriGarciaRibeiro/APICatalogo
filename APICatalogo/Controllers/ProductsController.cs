@@ -2,6 +2,8 @@
 using APICatalogo.Models;
 using APICatalogo.Responses;
 using APICatalogo.Repositories.UnitOfWork;
+using APICatalogo.DTOs;
+using AutoMapper;
 
 namespace APICatalogo.Controllers;
 
@@ -10,16 +12,19 @@ namespace APICatalogo.Controllers;
     public class ProductsController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public ProductsController(IUnitOfWork unitOfWork)
+        public ProductsController(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
+
 
 
         // GET: api/Produtos
         [HttpGet]
-        public async Task<ActionResult<PaginatedResponse<Product>>> GetProducts(int pageNumber = 1, int pageSize = 10)
+        public async Task<ActionResult<PaginatedResponse<ProductDto>>> GetProducts(int pageNumber = 1, int pageSize = 10)
         {
             
                 var totalRecords = await _unitOfWork.ProductRepository.CountAsync();
@@ -31,6 +36,8 @@ namespace APICatalogo.Controllers;
 
                 var Products = await _unitOfWork.ProductRepository.GetAllAsync(pageNumber, pageSize);
 
+                var ProductsDtos = _mapper.Map<IEnumerable<ProductDto>>(Products);
+
                 // Construir o URL para a próxima página
                 string? nextPageUrl = null;
                 if (pageNumber < totalPages)
@@ -38,14 +45,14 @@ namespace APICatalogo.Controllers;
                     nextPageUrl = Url.Action("GetProdutos", new { pageNumber = pageNumber + 1, pageSize = pageSize });
                 }
 
-                var response = new PaginatedResponse<Product>(Products, pageNumber, pageSize, totalRecords, nextPageUrl);
+                var response = new PaginatedResponse<ProductDto>(ProductsDtos, pageNumber, pageSize, totalRecords, nextPageUrl);
                 return Ok(response);
         }
 
 
         // GET: api/Produtoes/5
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<ProductDto>> GetProduct(int id)
         {
         
             var product = await _unitOfWork.ProductRepository.GetAsync(c => c.ProductId == id);
@@ -55,7 +62,8 @@ namespace APICatalogo.Controllers;
                 return NotFound();
             }
 
-            return product;
+            return _mapper.Map<ProductDto>(product);
+
         }
 
         // PUT: api/Produtoes/5
@@ -84,14 +92,15 @@ namespace APICatalogo.Controllers;
         // POST: api/Produtoes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<ActionResult<ProductDto>> PostProduct(ProductDto productDto)
         {
+            var product = _mapper.Map<Product>(productDto);
 
             _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.CommitAsync();
             
 
-            return CreatedAtAction("PostProduct", new { id = product.ProductId }, product);
+            return CreatedAtAction("PostProduct", new { id = product.ProductId }, productDto);
 
         }
 

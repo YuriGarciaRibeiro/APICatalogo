@@ -1,4 +1,5 @@
 using APICatalogo.Context;
+using APICatalogo.DTOs.Mapping;
 using APICatalogo.Logging;
 using APICatalogo.Middlewares;
 using APICatalogo.Repositories;
@@ -41,6 +42,7 @@ builder.Logging.AddProvider(
     )
 
 );
+builder.Services.AddAutoMapper(typeof(DtoMappingProfille));
 
 var app = builder.Build();
 

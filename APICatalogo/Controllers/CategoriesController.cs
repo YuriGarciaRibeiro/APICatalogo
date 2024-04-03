@@ -12,6 +12,7 @@ using APICatalogo.Repositories;
 using APICatalogo.Repositories.UnitOfWork;
 using APICatalogo.DTOs;
 using AutoMapper;
+using APICatalogo.DTOs.CategoryDto;
 
 namespace APICatalogo.Controllers;
 
@@ -32,7 +33,7 @@ public class CategoriesController : ControllerBase
 
     // GET: api/Categorias
     [HttpGet]
-    public async Task<ActionResult<PaginatedResponse<CategoryDto>>> GetCategories(int pageNumber = 1, int pageSize = 10)
+    public async Task<ActionResult<PaginatedResponse<CategoryResponseDto>>> GetCategories(int pageNumber = 1, int pageSize = 10)
     {
 
         var totalRecords = await _unitOfWork.CategoryRepository.CountAsync();
@@ -51,7 +52,7 @@ public class CategoriesController : ControllerBase
         }
 
 
-        var categoriasDto = _mapper.Map<List<CategoryDto>>(categorias);
+        var categoriasDto = _mapper.Map<List<CategoryResponseDto>>(categorias);
 
         // Construir o URL para a próxima página (caso exista)
         string? nextPageUrl = null;
@@ -60,14 +61,14 @@ public class CategoriesController : ControllerBase
             nextPageUrl = Url.Action("GetCategorias", new { pageNumber = pageNumber + 1, pageSize = pageSize });
         }
 
-        var response = new PaginatedResponse<CategoryDto>(categoriasDto, pageNumber, pageSize, totalRecords, nextPageUrl);
+        var response = new PaginatedResponse<CategoryResponseDto>(categoriasDto, pageNumber, pageSize, totalRecords, nextPageUrl);
         return Ok(response);
     }
 
 
     // GET: api/Categorias/5
     [HttpGet("{id:int:min(1)}")]
-    public async Task<ActionResult<CategoryDto>> GetCategory(int id)
+    public async Task<ActionResult<CategoryResponseDto>> GetCategory(int id)
     {
         var categoria = await _unitOfWork.CategoryRepository.GetAsync(c => c.CategoryId == id);
 
@@ -76,7 +77,7 @@ public class CategoriesController : ControllerBase
             return NotFound();
         }
 
-        var categoriaDto = _mapper.Map<CategoryDto>(categoria);
+        var categoriaDto = _mapper.Map<CategoryResponseDto>(categoria);
 
         return categoriaDto;
     }
@@ -84,7 +85,7 @@ public class CategoriesController : ControllerBase
     // PUT: api/Categorias/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> PutCategory(int id, CategoryDto category)
+    public async Task<IActionResult> PutCategory(int id, CategoryRequestDto category)
     {
         if (id != category.CategoryId)
         {
@@ -107,15 +108,16 @@ public class CategoriesController : ControllerBase
     // POST: api/Categorias
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<CategoryDto>> PostCategory(CategoryDto category)
+    public async Task<ActionResult<CategoryResponseDto>> PostCategory(CategoryRequestDto category)
     {
         var categoryToAdd = _mapper.Map<Category>(category);
 
         _unitOfWork.CategoryRepository.CreateAsync(categoryToAdd);
         await _unitOfWork.CommitAsync();
 
-        return CreatedAtAction("PostCategory", new { id = category.CategoryId }, category);
+        var categoryResponseDto = _mapper.Map<CategoryResponseDto>(categoryToAdd);
 
+        return CreatedAtAction("PostCategory", new { id = categoryToAdd.CategoryId }, categoryResponseDto);
     }
 
     // DELETE: api/Categorias/5
